@@ -1,0 +1,203 @@
+\documentclass[a4paper,UTF8,no-math]{ctexart}
+%\documentclass[a4paper,UTF8,no-math,zihao=-4]{ctexart}
+%\usepackage[backref]{hyperref} 
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{geometry}
+\usepackage{zhnumber}
+\usepackage{amsmath}% eqref
+\usepackage{amssymb}% mathbb数学符号
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{natbib}
+\usepackage[linkcolor=blue,citecolor=blue,anchorcolor=blue]{hyperref}
+% \usepackage{}
+\bibliographystyle{plainnat}
+
+\setmainfont{Times New Roman}
+\hypersetup{colorlinks=true}
+
+%\hypersetup{hidelinks,bookmarks=true,bookmarksopen=true}
+
+\geometry{a4paper,left=1.27cm,right=1.27cm,top=1.27cm,bottom=1.27cm}
+\lstset{ % General setup for the package
+	language=Python,
+	numbers=left,
+	frame=shadowbox,
+	tabsize=4,
+	breaklines=true, 
+}
+% \hypersetup{
+% 	colorlinks=true
+% }
+
+\title{NER调研}
+\author{高磊}
+\date{\zhtoday}
+
+\begin{document}
+	% \maketitle
+	\section{NER}
+	
+	根据美国NIST自动内容抽取（automatic content extraction，ACE）评测计划的解释，实体概念在文本中的引用（entity mention，或称“指称项”）有三种形式：命名性指称、名词性指称和代词性指称。eg：“[[中国]乒乓球男队主教练][刘国梁]出席了会议，[他]指出了当前经济工作的重点。”中，实体“刘国梁”的指称项有三个，其中，“中国乒乓球男队主教练”是名词性指称，“刘国梁”是命名性指称，“他”是代词性指称。
+	
+	命名实体识别这个术语首次出现在MUC-6（Message Understanding Conferences），这个会议关注的主要问题是信息抽取（Information Extraction），即从报章等非结构化文本中抽取关于公司活动和国防相关活动的结构化信息（人名、地名、机构名、时间、数字等）。因此MUC-6组织的一项评测任务就是从文本中识别这些实体指称及其类别，这个任务叫命名实体识别和分类（named entity recognition and classification，NERC）。也就是识别实体指称的边界和类别。
+	
+	
+	在NER中应用的技术主要有五种\citep{nadeau2007survey}，\citep{li2018survey}：
+	
+	\begin{enumerate}
+		\item Rule-based approaches：这种方法不需要标注数据，依赖于手工设计的特征；
+		\item Semi-supervised learning approaches：半监督的学习方法（弱监督的学习方法）利用标注的小数据集（种子数据）自举学习；
+		\item Unsuperised learning approaches：依赖于无需手动标记训练样例的无监督算法；
+		\item Feature-based Superised learning approaches：依赖于需要特征工程的监督算法；
+		\item Deep-learning based approaches：通过端到端的方法，自动从原始数据中发掘分类and/or检测所需要的表征。
+	\end{enumerate}
+	
+	\section{Rule-based approaches}
+	
+	这种方法依赖手工设定的规则。可以参照\citep{rau1991extracting}从文本中识别和抽取公司名称的研究。
+	
+	规则可以根据特定领域的名词录和句法-词法来设计。这样设计的规则可以提升召回率，但是对精确度没什么作用。
+	
+	规则也可以根据主要依赖于手工制作的语义和句法特征。当专有名词很详尽的时候，这些系统表现得不错。但是这种系统使用了领域特定得规则和不完整的字典，这种系统常常有着较高的精确度但是召回率确很低，与此同时这种系统的鲁棒性不好，移植的代价很高。
+	
+	总之这种系统的实现代价较高，而且其可移植性很差。
+	
+%	Typical systems are Univ. of Sheffield's LaSIE-II [Humphreys+98], ISOQuest's NetOwl [Aone+98] [Krupha+98] and Univ. of Edinburgh's LTG [Mikheev+98] [Mikheev+99] for English NER. These systems are mainly rule-based.
+%	
+%	[Humphreys+98] K. Humphreys, R. Gaizauskas,S. Azzam, C. Huyck, B. Mitchell, H. Cunningham,Y. Wilks. Univ. of Sheffield: Description of the LaSIE-II System as Used for MUC-7. MUC-7 . Fairfax, Virginia. 1998.
+%	
+%	
+%	[Aone+98] C. Aone, L. Halverson, T. Hampton,
+%	M. Ramos-Santacruz. SRA: Description of the IE2
+%	System Used for MUC-7. MUC-7 . Fairfax, Virginia.
+%	1998.
+%	
+%	[Mikheev+98] A. Mikheev, C. Grover, M.
+%	Moens. Description of the LTG System Used for
+%	MUC-7. MUC-7 . Fairfax, Virginia. 1998.
+	
+%	\newpage
+	
+	\section{Feature-based supervised learning approaches}
+	
+	监督学习算法系统通常读取大规模的标注语料对模型进行参数训练。
+	
+	监督学习方法的baseline取决于vocabulary transfer，即在训练语料库和测试语料库中不重复出现的单词比例。
+	
+	\subsection{HMM}
+	
+	% \begin{quote}
+	
+	% \end{quote}
+	
+	\textcolor{red}{这部分的知识我参考了《统计学习方法》——李航。}
+	
+	隐马尔可夫模型（Hidden Markov Model，HMM），是可用于标注问题的统计学模型，描述有隐藏的马尔可夫链随机生成观测序列的过程，属于生成模型。隐马尔可夫问题可以用于标注，此时状态对应着标记。
+	
+	
+	
+	隐马尔可夫模型可表示为一个五元组$\lambda=(N,M,\mathbf{A}, \mathbf{B}, \mathbf{\pi})$，为了简便也可表示为$\lambda=(\mathbf{A}, \mathbf{B}, \mathbf{\pi})$。
+	
+	% \begin{enumerate}
+	
+	% \end{enumerate}
+	
+	\begin{itemize}
+		\item N:状态的有限集合。在这里，是指每一个词语背后的标注；
+		\item M:观察值的有限集合。在这里，是指每一个词语本身；
+		\item A:状态转移概率矩阵。在这里，是指某一个标注转移到下一个标注的概率；
+		\item B:观测概率矩阵，也就是发射概率矩阵。在这里，是指在某个标注下，生成某个词的概率；
+		\item π:初始概率矩阵。在这里，是指每一个标注的初始化概率。
+	\end{itemize}
+	
+	HMM有三个基本问题：
+	
+	\begin{enumerate}
+		\item 估计问题：给定一个观察序列$O = (O_{1},O_{2}, \cdots ,O_{T})$和模型$\lambda=(\mathbf{A}, \mathbf{B},\mathbf{\pi})$，求$P(O | \lambda)$；
+		\item 序列问题：给定一组观察序列和模型，求解给定观测序列条件概率最大的状态序列了；
+		\item 训练问题或参数估计问题：给定观察序列，根据最大似然法来估计模型的参数。
+	\end{enumerate}
+	
+	隐马尔可夫模型有三种应用场景，我们做命名实体识别只用到其中的一种——求观察序列的背后最可能的标注序列\footnote{这个问题也叫预测或解码(decoding)}。即给定观测序列$\mathbf{O} = (O_{1},O_{2}, \cdots ,O_{T})$，求$P(I|O)$最大的状态序列$\mathbf{I}$。
+	
+	在已知观测序列列$O = (O_{1},O_{2}, \cdots ,O_{T})$和模型$\lambda=(\mathbf{A}, \mathbf{B},\mathbf{\pi})$，应用维特比（viterbi）算法，就可以求给定观测序列条件概率最大的状态序列了。
+	
+	为此，引入两个变量$\delta$和$\psi$。定义在时刻$t$状态为$i$的所有单个路径$\left(i_{1}, i_{2}, \cdots, i_{t}\right)$中概率最大值为$$\delta_{t}(i)=\max _{i_{1}, i_{2}, \cdots, i_{-1}} P\left(i_{t}=i, i_{t-1}, \cdots, i_{1}, o_{t}, \cdots, o_{1} | \lambda\right), \quad i=1,2, \cdots, N$$
+	
+	定义在时刻$t$为状态$i$的所有单个路径中概率最大的路径的第$t-1$个节点为：$$\psi_{t}(i)=\arg \max _{1 \leq j \leqslant N}\left[\delta_{t-1}(j) a_{j t}\right], \quad i=1,2, \cdots, N$$
+	
+	\begin{algorithm}
+		\caption{维特比}
+		\label{alg:viterbi}
+		{\bf 输入：}模型$\lambda$和观测$O = (O_{1},O_{2}, \cdots ,O_{T})$
+		
+		{\bf 输出：}最优化路径$I^{*} = (i^{*}_{1},i^{*}_{1},\cdots,i^{*}_{n})$
+		
+		\begin{algorithmic}[1] 
+			\STATE {初始化$$\begin{array}{c}{\delta_{1}(i)=\pi_{i} b_{i}\left(o_{1}\right), \quad i=1,2, \cdots, N} \\ {\psi_{1}(i)=0, \quad i=1,2, \cdots, N}\end{array}
+				$$}
+			\STATE{递推，对于$t=2,3, \cdots, T$ $$\delta_{t}(i)=\max _{1 \leqslant j \leqslant N}\left[\delta_{t-1}(j) a_{j i}\right] b_{i}\left(o_{t}\right), \quad i=1,2, \cdots, N$$ $$\psi_{t}(i)=\arg \max _{1 \leqslant j \leqslant N}\left[\delta_{t-1}(j) a_{j i}\right], \quad i=1,2, \cdots, N$$}
+			\STATE{终止$$\begin{aligned} P^{*} &=\max _{1 \leqslant i \leqslant N} \delta_{T}(i) \\ i_{T}^{*}=& \arg \max _{1 \leqslant i \leqslant N}\left[\delta_{T}(i)\right] \end{aligned}$$}
+			\STATE{最有路径回溯，对于$$t=T-1, T-2, \cdots, 1$$ $$i_{t}^{*}=\psi_{t+1}\left(i_{t+1}^{*}\right)$$求得最优路径$I^{*}=\left(i_{1}^{*}, i_{2}^{*}, \cdots, i_{T}^{*}\right)$}
+		\end{algorithmic} 
+	
+	\end{algorithm}
+	
+	在实际应用中，往往不只是搜索一个最优状态序列.而是搜索$n$个最佳($n$-best)路径.因此,每个结点上常常需要记录$m$个最佳($m$-best，$m<n$)状态。
+	
+	\newpage
+	
+	%	\subsection{CRF\cite{crf}}
+	\subsection{CRF}
+	
+	
+	\newpage
+	
+	\section{Semi-supervised learning approaches}
+	
+	半监督学习算法的主要技术是“bootstrapping”，这种算法涉及到一小部分的监督（它需要一组种子（seed）来启动学习过程）。
+	
+	比如，有一个目标是识别疾病名称的系统可能要求用户提供少量的示例名称。然后系统会搜索出包含这些名称的句子并且试着从这些句子中找到和疾病名称相关的上下文线索（contextual clues）。然后系统找出在类似的上下文中出现的名称。一直重复这个过程，最后找到大量的疾病名称和大量的上下文。
+	
+	可参考\citep{nadeau2006unsupervised},Nadeau et al. [52] proposed an unsupervised system for
+	gazetteer building and named entity ambiguity resolution.
+	This system combines entity extraction and disambiguation
+	based on simple yet highly effective heuristics.
+	Nadeau 等人 [ 52 ] 提出了一种无监督的地名录建筑系统和命名实体模糊解决方案。 该系统结合了基于简单而高效的启发式的实体提取和消除歧义。
+	
+	
+	
+	\section{Unsupervised learning approaches}
+	
+	一个典型的无监督学习的方法是聚类。主要是利用词汇资源（如WordNet）等进行上下文聚类。这些技术的关键思想是利用词汇资源、词汇模式和在大规模语料库上统计的信息来推断实体的指称项。
+	
+	Collins等人[51]指出，使用未标记的数据减少了对仅7个简单“种子”规则的监督要求。然后提出了两种命名实体分类的无监督算法。同样，Knowitall[7]系统利用一组谓词名称作为输入，并从小型通用提取模式中引导其识别过程。 
+	
+	 Zhang and Elhadad [41] proposed an unsupervised
+	approach to extracting named entities from biomedical text.
+	Instead of supervision, their model resorts to terminolo-
+	gies, corpus statistics (e.g., inverse document frequency
+	and context vectors) and shallow syntactic knowledge (e.g.,
+	noun phrase chunking). Experiments on two mainstream
+	biomedical datasets demonstrate the effectiveness and gen-
+	eralizability of their unsupervised approach.此外，Zhang和Elhadad[41]提出了一种从生物医学文本中提取命名实体的无监督方法。它们的模型采用术语、语料库统计(如逆文档频率和上下文向量)和浅层句法知识(如名词短语分块)来代替监督。在两个主流生物医学数据集上的实验证明了其无监督方法的有效性和通用性。 
+	
+	
+	
+	
+	
+	
+	
+	
+	\section{Deep-learning based approaches}
+	
+%	\subsection{BiLSTM-CRF\cite{bilstm-crf}}
+	\subsection{BiLSTM-CRF}
+%	\subsection{BiLSTM-CNNs\cite{bilstm-CNNs-ACL2016}}
+	\subsection{BiLSTM-CNNs}
+
+	% 我要试一下footcite\footnote{Zhou:2002:NER:1073083.1073163}
+    \bibliography{mybib}
+\end{document}
