@@ -133,7 +133,7 @@
 	
 	% \end{quote}
 	
-	\textcolor{red}{这部分的知识我参考了}\citep{李航2012统计学习方法}，\citep{宗成庆2013统计自然语言处理}。
+	这部分具体算法参考了：\citep{李航2012统计学习方法}，\citep{宗成庆2013统计自然语言处理}。
 
 	
 	隐马尔可夫模型（Hidden Markov Model，HMM），是可用于标注问题的统计学模型，描述有隐藏的马尔可夫链随机生成观测序列的过程，属于生成模型。隐马尔可夫问题可以用于标注，此时状态对应着标记。
@@ -170,6 +170,8 @@
 	
 	定义在时刻$t$为状态$i$的所有单个路径中概率最大的路径的第$t-1$个节点为：$$\psi_{t}(i)=\arg \max _{1 \leq j \leqslant N}\left[\delta_{t-1}(j) a_{j t}\right], \quad i=1,2, \cdots, N$$
 	
+	\newpage
+	
 	\begin{algorithm}
 		\caption{维特比}
 		\label{alg:viterbi}
@@ -203,7 +205,7 @@
 	
 	\citep{lafferty2001conditional}最先将条件随机场用于命名识别。
 	
-	CRF的学习需要先了解马尔可夫网络及其因子分解\citep{李航2012统计学习方法},\citep{noauthor__nodate}。
+	CRF的学习需要先了解马尔可夫网络及其因子分解，可参考\citep{李航2012统计学习方法}。
 	
 	设$P(Y|X)$为线性条件随机场，则在随机变量$X$取值为$x$的条件下，随机变量$Y$取值为$y$的条件概率具有如下形式：\begin{equation}
 P(y | x)=\frac{1}{Z(x)} \exp \left(\sum_{i, k} \lambda_{k} t_{k}\left(y_{i-1},y_{i}, x, i\right)+\sum_{i, l} \mu_{l} s_{l}\left(y_{i}, x, i\right)\right)
@@ -223,10 +225,27 @@ Z(x)=\sum_{y} \exp \left(\sum_{i, k} \lambda_{k} t_{k}\left(y_{i-1}, y_{i}, x, i
 
 	CRF也需要解决三个问题：
 	\begin{enumerate}
-		\item 特征的选取
-		\item 参数训练：可在训练集上基于对数似然函数的最大化进行
-		\item 解码
+		\item 特征的选取:可用特征函数表述。根据\citep{_crf_2010}：可分为上下文特征、词性特征、词表外部特征，需要手工进行设计。可以参考\citep{noauthor_crf_nodate}结合CRF++的设计方法；
+		\item 参数训练：可在训练集上基于对数似然函数的最大化进行；
+		\item 解码：$y^{*} = \arg \max_{y} P(y|x)$
 	\end{enumerate}
+	
+	\subsection{监督学习方法总结}
+	
+	条件随机场和隐马尔可夫模型都是假设状态满足马尔可夫性，即在命名实
+	体识别中，当前词的实体名称和上一个实体名称有概率转移关系而与其它位置的
+	实体名称无关，比如人名后面跟人名的概率是o.s，跟地名的概率是0.3，跟机构名
+	的概率是0.2。因此，这种概率转移矩阵，可以很容易地在标注集上进行统计出
+	来。对于隐马尔可夫模型来说，得到了转移概率矩阵后就结束了，而对条件随机
+	场来说，因为有特征函数，可以在二维条件转移矩阵基础上再增加一维词语特征，
+	如“当AB相邻且A是人名且B的单词长度超过3时，B是地名的概率是某一个”。
+
+	缺点\citep{隋臣2017基于深度学习的中文命名实体识别研究}：
+	\begin{itemize}
+		\item 现实中的语言模型往往不满足统计学模型的条件独立假设；
+		\item 传统的统计学模型只考虑了己经发生了的状态对当前状态的影响，而没有考虑到后面发生的状态也可能对当前的状态产生影响；
+		\item 传统的统计模型在各自的训练集上学出的特征缺乏普遍的适应性。
+	\end{itemize}
 	
 	\newpage
 	
@@ -236,11 +255,7 @@ Z(x)=\sum_{y} \exp \left(\sum_{i, k} \lambda_{k} t_{k}\left(y_{i-1}, y_{i}, x, i
 	
 	比如，有一个目标是识别疾病名称的系统可能要求用户提供少量的示例名称。然后系统会搜索出包含这些名称的句子并且试着从这些句子中找到和疾病名称相关的上下文线索（contextual clues）。然后系统找出在类似的上下文中出现的名称。一直重复这个过程，最后找到大量的疾病名称和大量的上下文。
 	
-	可参考\citep{nadeau2006unsupervised},Nadeau et al. [52] proposed an unsupervised system for
-	gazetteer building and named entity ambiguity resolution.
-	This system combines entity extraction and disambiguation
-	based on simple yet highly effective heuristics.
-	Nadeau 等人 [ 52 ] 提出了一种无监督的地名录建筑系统和命名实体模糊解决方案。 该系统结合了基于简单而高效的启发式的实体提取和消除歧义。
+	可参考\citep{nadeau2006unsupervised}，该系统使用了简单而高效的启发式方法来完成实体提取和消除歧义。
 	
 	
 	
@@ -248,31 +263,34 @@ Z(x)=\sum_{y} \exp \left(\sum_{i, k} \lambda_{k} t_{k}\left(y_{i-1}, y_{i}, x, i
 	
 	一个典型的无监督学习的方法是聚类。主要是利用词汇资源（如WordNet）等进行上下文聚类。这些技术的关键思想是利用词汇资源、词汇模式和在大规模语料库上统计的信息来推断实体的指称项。
 	
-	Collins等人[51]指出，使用未标记的数据减少了对仅7个简单“种子”规则的监督要求。然后提出了两种命名实体分类的无监督算法。同样，Knowitall[7]系统利用一组谓词名称作为输入，并从小型通用提取模式中引导其识别过程。 
-	
-	 Zhang and Elhadad [41] proposed an unsupervised
-	approach to extracting named entities from biomedical text.
-	Instead of supervision, their model resorts to terminolo-
-	gies, corpus statistics (e.g., inverse document frequency
-	and context vectors) and shallow syntactic knowledge (e.g.,
-	noun phrase chunking). Experiments on two mainstream
-	biomedical datasets demonstrate the effectiveness and gen-
-	eralizability of their unsupervised approach.此外，Zhang和Elhadad[41]提出了一种从生物医学文本中提取命名实体的无监督方法。它们的模型采用术语、语料库统计(如逆文档频率和上下文向量)和浅层句法知识(如名词短语分块)来代替监督。在两个主流生物医学数据集上的实验证明了其无监督方法的有效性和通用性。 
-	
-	
-	
-	
-	
-	
+	\citep{zhang2013unsupervised}提出了一种从生物医学文本中提取命名实体的无监督方法。它们的模型采用术语、语料库统计(如逆文档频率（inverse document frequency）和上下文向量)和浅层句法知识(如名词短语分块)来代替监督学习算法。在两个主流生物医学数据集上的实验证明了其无监督方法的有效性和通用性。 
 	
 	
 	\section{Deep-learning based approaches}
 	
+	现阶段主流的命名实体识别的基本套路可以总结为“三板斧”：单词的字符级表示、（双向）LSTM编码和CRF解码。代表性工作是2016年发表在ACL的工作
+	
+
 %	\subsection{BiLSTM-CRF\cite{bilstm-crf}}
 	\subsection{BiLSTM-CRF}
+	
+	\citep{bilstm-crf}
+	
 %	\subsection{BiLSTM-CNNs\cite{bilstm-CNNs-ACL2016}}
 	\subsection{BiLSTM-CNNs}
+	
+	\citep{chiu2016named}
+	
+	\subsection{BiLSTM-CNNs-CRF}
+	
+	\citep{ma2016end}
 
+	\subsection{BERT-BiLSTM-CRF}
+	
+	\citep{devlin2018bert}
 	% 我要试一下footcite\footnote{Zhou:2002:NER:1073083.1073163}
+	
+	\newpage
+	
     \bibliography{mybib}
 \end{document}
