@@ -10,7 +10,7 @@
 \usepackage{algorithm}
 \usepackage{algorithmic}
 \usepackage{natbib}
-\usepackage[linkcolor=blue,citecolor=blue,anchorcolor=blue]{hyperref}
+\usepackage[linkcolor=black,citecolor=blue,anchorcolor=blue]{hyperref}
 % \usepackage{}
 \bibliographystyle{plainnat}
 
@@ -37,14 +37,16 @@
 
 \begin{document}
 	% \maketitle
+	\tableofcontents
+	
+	\newpage
+	
 	\section{NER}
+	命名实体识别这个术语首次出现在MUC-6（Message Understanding Conferences），这个会议关注的主要问题是信息抽取（Information Extraction），即从报章等非结构化文本中抽取关于公司活动和国防相关活动的结构化信息（人名、地名、机构名、时间、数字等）。因此MUC-6组织的一项评测任务就是从文本中识别这些实体指称及其类别，这个任务叫命名实体识别和分类（named entity recognition and classification，NERC）。也就是识别实体指称的边界和类别。
 	
 	根据美国NIST自动内容抽取（automatic content extraction，ACE）评测计划的解释，实体概念在文本中的引用（entity mention，或称“指称项”）有三种形式：命名性指称、名词性指称和代词性指称。eg：“[[中国]乒乓球男队主教练][刘国梁]出席了会议，[他]指出了当前经济工作的重点。”中，实体“刘国梁”的指称项有三个，其中，“中国乒乓球男队主教练”是名词性指称，“刘国梁”是命名性指称，“他”是代词性指称。
 	
-	命名实体识别这个术语首次出现在MUC-6（Message Understanding Conferences），这个会议关注的主要问题是信息抽取（Information Extraction），即从报章等非结构化文本中抽取关于公司活动和国防相关活动的结构化信息（人名、地名、机构名、时间、数字等）。因此MUC-6组织的一项评测任务就是从文本中识别这些实体指称及其类别，这个任务叫命名实体识别和分类（named entity recognition and classification，NERC）。也就是识别实体指称的边界和类别。
-	
-	
-	在NER中应用的技术主要有五种\citep{nadeau2007survey}，\citep{li2018survey}：
+	在NER中应用的技术主要有五种\citep{nadeau2007survey}，\citep{li2018survey}，\citep{宗成庆2013统计自然语言处理}：
 	
 	\begin{enumerate}
 		\item Rule-based approaches：这种方法不需要标注数据，依赖于手工设计的特征；
@@ -86,13 +88,14 @@
 	
 	监督学习方法的baseline取决于vocabulary transfer，即在训练语料库和测试语料库中不重复出现的单词比例。
 	
-	\subsection{HMM}
+	\subsection{隐马尔可夫模型HMM}
 	
 	% \begin{quote}
 	
 	% \end{quote}
 	
-	\textcolor{red}{这部分的知识我参考了《统计学习方法》——李航。}
+	\textcolor{red}{这部分的知识我参考了}\citep{李航2012统计学习方法}，\citep{宗成庆2013统计自然语言处理}。
+
 	
 	隐马尔可夫模型（Hidden Markov Model，HMM），是可用于标注问题的统计学模型，描述有隐藏的马尔可夫链随机生成观测序列的过程，属于生成模型。隐马尔可夫问题可以用于标注，此时状态对应着标记。
 	
@@ -122,7 +125,7 @@
 	
 	隐马尔可夫模型有三种应用场景，我们做命名实体识别只用到其中的一种——求观察序列的背后最可能的标注序列\footnote{这个问题也叫预测或解码(decoding)}。即给定观测序列$\mathbf{O} = (O_{1},O_{2}, \cdots ,O_{T})$，求$P(I|O)$最大的状态序列$\mathbf{I}$。
 	
-	在已知观测序列列$O = (O_{1},O_{2}, \cdots ,O_{T})$和模型$\lambda=(\mathbf{A}, \mathbf{B},\mathbf{\pi})$，应用维特比（viterbi）算法，就可以求给定观测序列条件概率最大的状态序列了。
+	在已知观测序列列$O = (O_{1},O_{2}, \cdots ,O_{T})$和模型$\lambda=(\mathbf{A}, \mathbf{B},\mathbf{\pi})$\footnote{模型的参数学习可以通过EM算法实现}，应用维特比（viterbi）算法，就可以求给定观测序列条件概率最大的状态序列了。
 	
 	为此，引入两个变量$\delta$和$\psi$。定义在时刻$t$状态为$i$的所有单个路径$\left(i_{1}, i_{2}, \cdots, i_{t}\right)$中概率最大值为$$\delta_{t}(i)=\max _{i_{1}, i_{2}, \cdots, i_{-1}} P\left(i_{t}=i, i_{t-1}, \cdots, i_{1}, o_{t}, \cdots, o_{1} | \lambda\right), \quad i=1,2, \cdots, N$$
 	
@@ -148,9 +151,19 @@
 	在实际应用中，往往不只是搜索一个最优状态序列.而是搜索$n$个最佳($n$-best)路径.因此,每个结点上常常需要记录$m$个最佳($m$-best，$m<n$)状态。
 	
 	\newpage
+%	
+%	
+%	\subsection{最大熵模型MEM}
+%	
+%	\newpage
 	
 	%	\subsection{CRF\cite{crf}}
-	\subsection{CRF}
+	\subsection{条件随机场CRF}
+	
+	CRF\citep{lafferty2001conditional}
+	
+	CRF的学习需要先了解马尔可夫网络及其因子分解\citep{李航2012统计学习方法},\citep{noauthor__nodate}。
+	
 	
 	
 	\newpage
