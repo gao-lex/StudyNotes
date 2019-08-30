@@ -10,7 +10,9 @@
 \usepackage{algorithm}
 \usepackage{algorithmic}
 \usepackage{natbib}
-%\usepackage[linkcolor=green,citecolor=blue,anchorcolor=red]{hyperref}
+\usepackage{multirow}
+\usepackage{makecell}
+\usepackage[linkcolor=black,citecolor=blue,anchorcolor=red]{hyperref}
 \usepackage{hyperref}
 % \usepackage{}
 \bibliographystyle{plainnat}
@@ -65,7 +67,31 @@
 	现在较为流行的是将其中两种
 	方法结合甚至是三种结合，可以充分利用不同方法的
 	优点，提高学习的准确度和效率。
+	\begin{table}[htbp]
+		\center
+		\caption{命名实体识别方法汇总}
+		\begin{tabular}{|c|l|}
+		\hline
+		类型 & 采用的模型或方法 \\
+		\hline 
+		有监督的学习算法 & \makecell[l]{隐马尔可夫模型\\最大熵模型\\支持向量机 \\条件随机场 \\决策树}\\
+		
+		\hline
+		
+		半监督的学习算法 & 利用利用标注的小数据集自举学习 \\
+		\hline
+		无监督的学习算法&利用词汇资源等信息进行上下文聚类\\
+		\hline
+		混合方法&模型和人工规则相结合 \\
+		\hline
+		深度学习&\makecell[l]{BiLSTM-CRF\\BiLSTM-CNNs\\BiLSTM-CNNs-CRF\\Bert-BiLSTM-CRF}\\
+		\hline
+		
+		\end{tabular}
+	\end{table}
+
 	
+%	\newpage
 	
 	\section{Rule-based approaches}
 	
@@ -103,7 +129,7 @@
 	
 	总之这种系统的实现代价较高，而且其可移植性很差。
 	
-	\newpage
+%	\newpage
 	
 %	Typical systems are Univ. of Sheffield's LaSIE-II [Humphreys+98], ISOQuest's NetOwl [Aone+98] [Krupha+98] and Univ. of Edinburgh's LTG [Mikheev+98] [Mikheev+99] for English NER. These systems are mainly rule-based.
 %	
@@ -125,7 +151,7 @@
 	
 	监督学习算法系统通常读取大规模的标注语料对模型进行参数训练。这种方法主要包括：隐马尔可夫模型（Hidden Markov Model，HMM）、最大熵模型（Maximum Entropy，ME）、支持向量机（Support Vector Machine，SVM）、条件随机场（Conditional Random Fields，CRF）等。
 	
-	监督学习方法的baseline取决于vocabulary transfer，即在训练语料库和测试语料库中不重复出现的单词比例。监督学习的方法对特征选取的要求较高，对特征选区很敏感。比较经典的方法主要有：隐马尔可夫模型和条件随机场。
+	监督学习方法的baseline取决于vocabulary transfer，即在训练语料库和测试语料库中不重复出现的单词比例。监督学习的方法对特征选取的要求较高，对特征选取很敏感。比较经典的方法主要有：隐马尔可夫模型和条件随机场。
 	
 	\subsection{隐马尔可夫模型HMM}
 	
@@ -170,9 +196,9 @@
 	
 	定义在时刻$t$为状态$i$的所有单个路径中概率最大的路径的第$t-1$个节点为：$$\psi_{t}(i)=\arg \max _{1 \leq j \leqslant N}\left[\delta_{t-1}(j) a_{j t}\right], \quad i=1,2, \cdots, N$$
 	
-	\newpage
+%	\newpage
 	
-	\begin{algorithm}
+	\begin{algorithm}[htb]
 		\caption{维特比}
 		\label{alg:viterbi}
 		{\bf 输入：}模型$\lambda$和观测$O = (O_{1},O_{2}, \cdots ,O_{T})$
@@ -193,7 +219,7 @@
 	
 	
 	
-	\newpage
+%	\newpage
 %	
 %	
 %	\subsection{最大熵模型MEM}
@@ -247,7 +273,7 @@ Z(x)=\sum_{y} \exp \left(\sum_{i, k} \lambda_{k} t_{k}\left(y_{i-1}, y_{i}, x, i
 		\item 传统的统计模型在各自的训练集上学出的特征缺乏普遍的适应性。
 	\end{itemize}
 	
-	\newpage
+%	\newpage
 	
 	\section{Semi-supervised learning approaches}
 	
@@ -268,9 +294,31 @@ Z(x)=\sum_{y} \exp \left(\sum_{i, k} \lambda_{k} t_{k}\left(y_{i-1}, y_{i}, x, i
 	
 	\section{Deep-learning based approaches}
 	
-	现阶段主流的命名实体识别的基本套路可以总结为“三板斧”：单词的字符级表示、（双向）LSTM编码和CRF解码。代表性工作是2016年发表在ACL的工作
-	
 
+	
+	\citep{collobert2011natural}提出了一种统一的神经网络架构和学习算法，适用于词性标注、分词、命名实体识别和语义角色标注等各种自然语言处理任务。这种多样性是通过避免构造特定于任务的工程而实现的，因此该系统也没有利用很多先验的知识。该系统没有为每个任务精心优化手工制作输入特征，而是根据大量的大部分未标注的训练数据学习其内部表示。这项工作可作为构建一个性能良好、计算需求最少的标记系统的基础。
+	
+	上述提到的\citep{collobert2011natural}的这项工作用神经网络模型来自动化命名实体识别任务中的特征抽取，从而减少特征工程的工作量。从此开始，神经网络模型在命名实体识别任务中的研究开始流行起来。
+	
+	现阶段主流的命名实体识别的基本套路可以总结为“三板斧”：
+	
+	\begin{enumerate}
+\item 输入的分布式表示（Distributed representations for input）：词语级别的表示或字符级别的表示或混合分布式表示。算法：CBOW、skip-gram、Bert$\cdots$；
+\item 上下文编码器（ Context encoder）：CNN、RNN、BiLSTM；
+\item 标签编码器（Tag decoder）：多层感知机、Softmax、条件随机场、RNN。
+	\end{enumerate}
+	
+	
+	其优点有：
+	
+	\begin{itemize}
+\item 相较于线性模型，深度学习可以找到更多非线性的联系，表示能力更强；
+\item 传统方法的命名实体识别花了大量的工作和技巧在构造数据特征上，而深度学习方法自动从原始数据中学习有用的数据表示；
+\item 深度学习模型能够端到端地通过梯度下降求解，通过这个性质可以设计一些更加复杂的命名实体识别系统。
+	\end{itemize}
+
+
+	\textcolor{red}{这部分涉及了较多DL方面的基础知识，我边补基础边看$\cdots$}
 %	\subsection{BiLSTM-CRF\cite{bilstm-crf}}
 	\subsection{BiLSTM-CRF}
 	
