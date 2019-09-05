@@ -1,23 +1,305 @@
-\documentclass{beamer}
+\documentclass[9pt,aspectratio=169]{ctexbeamer}
 
-\usepackage[UTF8,noindent]{ctexcap}
-\usetheme{material}
+%\usepackage[UTF8,noindent]{ctexcap}
+\usepackage{beamerfoils}%logoon、logooff
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{makecell}
+\usepackage{multirow}
+\usefonttheme[onlymath]{serif}
+\usetheme{Antibes}%Copenhagen Antibes  Berlin  AnnArbor
+\usepackage{mathptmx}% 字体
+\usepackage{helvet}% 字体
+\usepackage{listings}
+%\usebeamer
+%\usepackage{tikz}
+%\usepackage{beamerfoils}
+%\usepackage{pgf}
+%\MyLogo{
+%	\pgfputat{\pgfxy(0,8)}{\pgfbox[right,base]{\includegraphics[scale=0.1]{../../assets/images/eb20.png}}}
+%}
+\lstset{ % General setup for the package
+	language=Python,
+	numbers=left,
+	frame=shadowbox,
+	tabsize=4,
+	breaklines=true, 
+}
+\usecolortheme{beaver}
+\newtheorem{thm}{定理}
+
 \title{达观杯-命名实体识别}
 \author{刘同存\\王闯\\高磊}
-\institute{北京邮电大学\\东信北邮}
+%\institute{北京邮电大学\\东信北邮}
+\logo{\includegraphics[scale=0.08]{../../assets/images/bupt.jpeg}}
 \date{\today}
-\useLightTheme
-\usePrimaryGrey
+
 \begin{document}
+	
 	\begin{frame}
 		\titlepage
 	\end{frame}
+	\section{赛题背景}
 	\begin{frame}
-		\frametitle{什么是NER}
-		\framesubtitle{第一小节}
+		信息抽取（information extraction），即从自然语言文本中，抽取出特定的事件或事实信息，帮助我们将海量内容自动分类、提取和重构。文本智能抽取是信息检索、智能问答、智能对话等人工智能应用的重要基础，它可以克服自然语言非形式化、不确定性等问题，发掘并捕获其中蕴含的有价值信息，进而用于业务咨询、决策支持、精准营销等方面，对产业界有着重要的实用意义。
+		
+		\begin{figure}
+			\centering
+			
+			\includegraphics[width=\linewidth]{../../assets/images/daguan-question-bg.jpg}
+		\end{figure}
 	\end{frame}
 
-	\begin{frame}{什么是NER}{第二小节}
-		内容...
+	\section{赛题理解}
+	\subsection{重要性}
+	\begin{frame}
+		
+		命名实体识别是多种自然语言处理技术的重要基础，对于句法分析、语法分析、语义分析等都有着极其重要的影响，主要应用在信息抽取、机器翻译、问答系统等方面。
+	
+		
+		
+	\end{frame}
+	\subsection{比赛目标}
+	\begin{frame}
+		本次大赛的任务是给定一定数量的标注语料以及海量的未标注语料，在$a,b,c$ 3个字段上做信息抽取任务。
+	\end{frame}
+
+\subsection{评价指标}
+\begin{frame}
+	信息抽取的评估指标是$F1$值，是正确率和召回率的调和平均值。
+	
+	\begin{gather*}
+	\text{正确率} = \frac{\text{抽取出的正确字段数}}{\text{抽取出的字段数}} \\
+	\text{召回率} = \frac{\text{抽取出的正确字段数}}{\text{样本的字段数}}\\
+	F1 = \frac{2 * \text{正确率}*\text{召回率}}{\text{正确率}+\text{召回率}}
+	\end{gather*}
+\end{frame}
+
+	\section{数据说明}
+	
+	\begin{frame}
+		\begin{itemize}
+			\item corpus.txt：大规模未标注语料，提供给参赛者用于训练语言模型；
+			\item train.txt：此数据集用于训练模型，每一行对应一条文本数据；
+			\item test.txt：此数据集用于测试。数据格式同train\_set.txt一致，但不包含标注；
+			\item submit\_sample.txt：此文件是预测结果文件的一个样例，和test\_set.txt中每行一一对应。
+		\end{itemize}
+		\begin{table}[]
+			\begin{tabular}{|c|l|}
+				\hline
+				语料文件               & 样例                                                                         \\
+				\hline
+				corpus.txt         & \makecell[l]{4509\_20808\_8197\_17159\_17441\_17145\_5908\\\_7706\_5470\_632\_9391\_15274} \\
+				\hline
+				train.txt          & \makecell[l]{7212\_17592\_21182/c  8487\_8217\_14790/a \\ 19215\_4216/o}                    \\
+				\hline
+				test.txt           & 2289\_11123\_11122\_17773\_13487\_5323                              \\
+				\hline
+				submit\_sample.txt & 2289/c 11123\_11122/b 17773\_13487\_5323/o         \\
+				\hline
+				                
+			\end{tabular}
+		\end{table}
+	\end{frame}
+	
+	\section{解题思路}
+	
+	\begin{frame}
+		基础方法：
+		\begin{itemize}
+			\item 监督学习，依赖于需要特征工程的监督学习算法：CRF
+			\item 深度学习，利用神经网络提取特征：BiLSTM-CRF
+		\end{itemize}
+%		\newline
+		提升方法：
+		\begin{itemize}
+			\item 预训练词向量：word2vec/glove
+			\item 预训练+微调：Bert
+		\end{itemize}
+		其他尝试：
+		\begin{itemize}
+			\item 不同的optimizer：Adma→rAdma
+			\item attention机制
+			\item 数据增强
+			\item 标注方式：BIO、BIOES、BIOS
+			\item 调参
+		\end{itemize}
+		
+		
+		
+		
+		
+	\end{frame}
+	
+	\section{条件随机场}
+	\subsection{定义}
+%\LogoOff
+	\begin{frame}
+		
+%		\frametitle{条件随机场CRF}
+%		\framesubtitle{定义}
+		
+		条件随机场(conditional random field)是给定随机变量$X$条件下，随机变量$Y$的马尔可夫随机场\footnote{马尔科夫随机场，又称概率无向图模型，是一个可以由无向图表示的联合概率分布}。
+		
+		在序列标注问题\footnote{所谓序列标注问题是指，对于一个一维线性输入序列$\mathbf{x} = \{x_{1},x_{2},\cdots,x_{n}\}$，给线性序列中的每个元素打上标签集合中的某个标签：$\mathbf{y}=\{y_{1},y_{2},\cdots,y_{n}\}$}中主要应用了定义在线性链上的特殊的条件随机场，称为线性链条件随机场。
+		
+		\begin{thm}
+			设在给定随机变量序列$X$的条件下，随机变量序列$Y$的条件概率分布$P(Y|X)$构成条件随机场，即满足马尔科夫性\begin{gather}
+				P(Y_{i}|X,Y_{1},\cdots,Y_{i-1},\cdots,Y_{i+1},\cdots,Y_{n}) = P(Y_{i}|X,Y_{i-1},Y_{i+1}) \notag \\
+				i=1,2,\cdots,n(\text{在}i=1\text{和}n\text{时只考虑单边})
+			\end{gather}则称$P(Y|X)$为线性链条件随机场。
+			
+		\end{thm}
+		
+%		$X=\{X_{1},X_{2},\cdots,X_{n}\}$，$Y=\{Y_{1},Y_{2},\cdots,Y_{n}\}$均为线性链表示的随机变量序列，若在给定
+		
+%		定理11.4
+%		定义$G=(V,E)$为一个无向图，$Y={Y_{v}|v}$玛，即V中的每个节点对应于一
+%		个随机变量所表示的标记序列的元素YV。如果每个随机变量Y对于G遵守马尔
+%		可夫属性，
+%		而且在给定
+%		即前面所提到的条件独立性，那么(X,  Y)就构成一个条件随机场，
+%		X和所有其他随机变量Y{uluxv,{u，二、}的条件下，随机变量Yv的概率
+			
+		
+		
+%		\begin{equation}
+%			P(\mathbf{Y}_{v}|\mathbf{X},\mathbf{Y}_{w},w\ne v) = P(\mathbf{Y}_{v}|\mathbf{X},\mathbf{Y}_{w},w\sim v)
+%		\end{equation}
+		
+		
+	\end{frame}
+%\LogoOn
+	\subsection{参数化形式}
+	\begin{frame}
+
+	
+
+		\begin{figure}
+			\centering
+			\includegraphics[width=0.3\linewidth]{../../assets/images/CRF-struct2.jpg}
+			\caption{链状条件随机场的无向图结构}
+		\end{figure}
+	
+		链状条件随机场假设在各个输出节点之间存在一阶马尔可夫独立性，而并不对$X$做任何的独立假设。
+		
+		设$P(Y|X)$为线性条件随机场，则在随机变量$X$取值为$x$的条件下，随机变量$Y$取值为$y$的条件概率有以下形式\footnote{Hammersley-Clifford定理：描述了概率无向图的联合概率分布}：
+		\begin{gather}
+			P(y|x) = \frac{1}{Z(x)}\exp\left(\sum_{i,k}\lambda_{k}t_{k}\left(y_{i-1},y_{i},x,i\right)+\sum_{i,l}\mu_ls_l\left(y_{i},x,i\right)\right) \\
+			Z({x}) = \sum_y\exp\left(\sum_{i,k}\lambda_{k}t_{k}\left(y_{i-1},y_{i},x,i\right)+\sum_{i,l}\mu_ls_l\left(y_{i},x,i\right)\right)
+		\end{gather}
+	\end{frame}
+	
+	\begin{frame}
+		\begin{figure}
+			\centering
+			\includegraphics[width=0.3\linewidth]{../../assets/images/CRF-struct2.jpg}
+			\caption{链状条件随机场的无向图结构}
+		\end{figure}
+		\begin{gather*}
+		P(y|x) = \frac{1}{Z(x)}\exp\left(\sum_{i,k}\lambda_{k}t_{k}\left(y_{i-1},y_{i},x,i\right)+\sum_{i,l}\mu_ls_l\left(y_{i},x,i\right)\right) \\
+		Z({x}) = \sum_y\exp\left(\sum_{i,k}\lambda_{k}t_{k}\left(y_{i-1},y_{i},x,i\right)+\sum_{i,l}\mu_ls_l\left(y_{i},x,i\right)\right)
+		\end{gather*}
+		
+		$ t_{k} $是定义在边上的特征函数（共有$ k $个），称为转移特征。表示对于观察序列$ X $,其标注序列在$ i $及$ i-1 $位置上标记的转移概率；
+		
+		$ s_{l} $是定义在节点上的特征函数（共有$ l $个），称为状态特征。表示对于观察序列$ X $及其$ i $位置的标记的概率依赖于当前位置。
+		
+		通常，特征函数$t_{k}$和$s_{l}$取值为1或0；当满足特征条件时取值为1，否则为0。
+		条件随机场完全由特征函数$t_{k}$，$s_{l}$和对应的权值$\lambda_{k}$，$\mu_{l}$确定。
+	\end{frame}
+
+
+	\subsection{训练}
+	
+	
+	
+	
+
+	\subsection{特征}
+	\begin{frame}[fragile]
+		把特征函数$ t_{k}\left(y_{i-1},y_{i},x,i\right) $和$ s_l\left(y_{i},x,i\right)\right) $可以抽象为一个特征函数$ f_{m}(y_{i-1},y_{i},x,i),(m=k+l)$。
+		
+		可通过特征模板来构造特征函数：
+\begin{lstlisting}
+# Unigram
+U00:%x[-2,0]
+U01:%x[-1,0]
+U02:%x[0,0]
+U03:%x[1,0]
+U04:%x[2,0]
+U05:%x[-2,0]/%x[-1,0]/%x[0,0]
+U06:%x[-1,0]/%x[0,0]/%x[1,0]
+U07:%x[0,0]/%x[1,0]/%x[2,0]
+U08:%x[-1,0]/%x[0,0]
+U09:%x[0,0]/%x[1,0]
+
+# Bigram
+B
+\end{lstlisting}
+		
+
+		
+	\end{frame}
+	
+	\subsection{CRF工具包——CRF++}
+	\begin{frame}
+		通过CRF++来实现命名实体识别：
+		
+		\begin{enumerate}
+			\item 转换训练集格式为CRF++所需：\begin{table}
+				\begin{tabular}{cc}
+				\multirow{6}*{7212\_17592\_21182/c 8487\_8217\_14790/a 19215\_4216/o  $\Rightarrow$  }            & 7212 B-c   \\
+				& 17592 I-c \\
+				& 21182 I-c              \\
+				& 8487 B-a \\
+				& 8217 I-a \\
+				& $\cdots$ \\
+			\end{tabular}
+			\end{table}
+			\item crf\_learn 学习参数值
+			\item crf\_test 对验证集进行预测
+			\item 依照所需提交文件格式还原测试集（1的逆运算）
+		\end{enumerate}
+	\end{frame}
+
+	\subsection{总结}
+	\begin{frame}
+		CRF的总结：
+		优点：
+		\begin{itemize}
+			\item 在训练和预测的时间、空间代价小
+			\item 利用了上下文语言环境
+		\end{itemize}
+		缺点：
+		\begin{itemize}
+			\item 依然需要手动构造特征
+			\item 这个比赛的数据集中，只有观测序列和状态序列两项，没有词性等其他特征辅助构造特征函数
+		\end{itemize}
+		可以使用深度学习的方法来解决这些缺点
+	\end{frame}
+	
+%
+%	\begin{frame}{条件随机场CRF}{特征}
+%		内容...
+%	\end{frame}
+
+	\section{总结}
+	\begin{frame}
+		共1258支队伍，名次45
+		\begin{table}[]
+			\begin{tabular}{cc}
+				\hline
+				方法               & 成绩   \\
+				\hline
+				CRF         & 86 \\
+%				\hline
+				BiLSTM-CRF         & 89               \\
+%				\hline
+				Bert-BiLSTM-CRF          & 92                              \\
+				\hline
+				
+			\end{tabular}
+		\end{table}
 	\end{frame}
 \end{document}
