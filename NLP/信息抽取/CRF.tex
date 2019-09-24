@@ -1,0 +1,133 @@
+\documentclass[a4paper,UTF8,no-math]{ctexart}
+%\documentclass[a4paper,UTF8,no-math,zihao=-4]{ctexart}
+%\usepackage[backref]{hyperref} 
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{geometry}
+\usepackage{zhnumber}
+\usepackage{amsmath}% eqref 
+\usepackage{amssymb}% mathbb数学符号
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{natbib}
+\usepackage{multirow}
+\usepackage{makecell}
+\usepackage[linkcolor=black,citecolor=blue,anchorcolor=red]{hyperref}
+\usepackage{hyperref}
+% \usepackage{}
+\bibliographystyle{plainnat}
+
+\setmainfont{Times New Roman}
+\hypersetup{colorlinks=true}
+
+%\hypersetup{hidelinks,bookmarks=true,bookmarksopen=true}
+
+\geometry{a4paper,left=1.27cm,right=1.27cm,top=1.27cm,bottom=1.27cm}
+\lstset{ % General setup for the package
+	language=Python,
+	numbers=left,
+	frame=shadowbox,
+	tabsize=4,
+	breaklines=true, 
+}
+% \hypersetup{
+% 	colorlinks=true
+% }
+
+\title{NER调研}
+\author{高磊}
+\date{\zhtoday}
+
+\begin{document}
+	% \maketitle
+
+	
+	设$P(Y|X)$为线性条件随机场，则在随机变量$X$取值为$x$的条件下，随机变量$Y$取值为$y$的条件概率具有如下形式：\begin{equation}
+P(y | x)=\frac{1}{Z(x)} \exp \left(\sum_{i, k} \lambda_{k} t_{k}\left(y_{i-1},y_{i}, x, i\right)+\sum_{i, l} \mu_{l} s_{l}\left(y_{i}, x, i\right)\right)
+\label{eq:crf-1}
+	\end{equation}
+	其中，\begin{equation}
+Z(x)=\sum_{y} \exp \left(\sum_{i, k} \lambda_{k} t_{k}\left(y_{i-1}, y_{i}, x, i\right)+\sum_{i, l} \mu_{i} s_{l}\left(y_{i}, x, i\right)\right)
+\label{eq:crf-2}
+	\end{equation}
+	式中，$t_{k}$和$s_{l}$是特征函数，$\lambda_{k}$和$\mu_{l}$是对应的权值。$Z(x)$是规范化因子，求和是在所有可能的输出序列上进行的。
+	
+	式\eqref{eq:crf-1}和式\eqref{eq:crf-2}是线性链条件随机场模型的基本形式，表示给定输入
+序列$x$，对输出序列$y$预测的条件概率。式\eqref{eq:crf-1}和式\eqref{eq:crf-2}中$t_{k}$是定义在边上的特征函数，称为转移特征，依赖于当前和前一个位置，$s_{l}$是定义在结点上的
+特征函数，称为状态特征，依赖于当前位置。$t_{k}$和$s_{l}$都依赖于位置，是局部特征
+函数。通常，特征函数$t_{k}$和$s_{l}$取值为1或0；当满足特征条件时取值为1，否则
+为0。条件随机场完全由特征函数$t_{k}$，$s_{l}$和对应的权值$\lambda_{k}$，$\mu_{l}$确定。
+
+	CRF也需要解决三个问题：
+	\begin{enumerate}
+		\item 特征的选取:可用特征函数表述。
+		\item 参数训练：可在训练集上基于对数似然函数的最大化进行；
+		\item 解码：$y^{*} = \arg \max_{y} P(y|x)$
+	\end{enumerate}
+	
+	    为简便起见，首先将转移特征和状态特征及其权值用统一的符号表示。设有$ K_{1} $个转移特征，$ K_{2} $个状态特征，$ K=K_{1}+K_{2} $，记\begin{equation}
+	    f_{k}\left(y_{i-1}, y_{i}, x, i\right)=\left\{\begin{array}{l}{t_{k}\left(y_{i-1}, y_{i}, x, i\right), \quad k=1,2, \cdots, K_{1}} \\ {s_{l}\left(y_{i}, x, i\right), \quad k=K_{1}+l ; l=1,2, \cdots, K_{2}}\end{array}\right.
+	    \end{equation}然后，对转移与状态特征在各个位置$ i $求和，记作\begin{equation}
+	    	f_{k}(y,x)=\sum_{i=1}^{n} f_{k}(y_{i-1},y_{i},x,i),\quad k=1,2,\cdot,k
+	    \end{equation}用$ w_{k} $表示特征$ f_{k}(y,x) $的权值，即\begin{equation}
+	    w_{k}=\begin{cases}
+	    \lambda_{k}, & k=1,2,\cdots,K_{1} \\
+	    \mu_{l}, & k=K_{1}+l;l=1,2,\cdots,K_{2}
+	    \end{cases}
+	    \end{equation}于是条件随机场可表示为\begin{equation}
+	    \begin{aligned} P(y | x) &=\frac{1}{Z(x)} \exp \sum_{k=1}^{K} w_{k} f_{k}(y, x) \\ Z(x) &=\sum_{y} \exp \sum_{k=1}^{K} w_{k} f_{k}(y, x) \end{aligned}
+	    \end{equation}
+	    
+	    若以$ w $表示权值变量，即\begin{equation}
+	    	w = (w_{1},w_{2},\cdots,w_{K})^{\top}
+	    \end{equation}以F(y,x)表示全局特征向量，即\begin{equation}
+	    	F(y,x) = \left(f_{1}\left(y,x\right),f_{2}\left(y,x\right),\cdot,,f_{K}\left(y,x\right)\right)
+	    \end{equation}
+	   
+	    则条件随机场可以写成向量$ w $与$ F(y,x) $的内积的形式：\begin{equation}
+	    	\begin{aligned}
+	    	P_{w}(y|x) = \frac{\exp{\left(w\cdot F\left(y,x\right)\right)}}{Z_{w}(x)}\\
+	    	Z_{w}(x) = \sum_{y}\exp{\left(w\cdot F\left(y,x\right)\right)}
+	    	\end{aligned}
+	    \end{equation}
+	    
+	    对于条件随机场模型。学习的优化目标函数是：\begin{equation}
+	    	\min_{w\in R^{n}} f(w)=\sum_{x}\tilde{P}(x)\log \sum_{y}\exp\left(\sum_{i=1}^{n}w_{i}f_{i}\left(x,y\right)\right)-\sum_{x,y}\tilde{P}(x,y)\sum_{i=1}^{n}w_{i}f_{i}\left(x,y\right) 
+	    \end{equation}其梯度函数是\begin{equation}
+	    	g(w)=\sum_{x,y}\tilde{P}(x)P_{w}(y|x)f(x,y)-E_{\tilde{P}}(f)
+	    \end{equation}
+	    
+	    拟牛顿法的BFGS算法如下：
+	    
+	    
+	    \begin{enumerate}
+	    	\item 选定初始点$ w_{(0)} $，取$ \mathbf{B}_{0} $为正定对称矩阵，置$ k=0 $
+	    	\item 计算$ g_{k}=g(w^{(k)}) $，若$ g_{k}=0 $，则停止计算；否则转3
+	    	\item 由$ B_{k}p_{k}=-g_{k} $求出$ p_{k} $
+	    	\item 一维搜索：求$\lambda_{k}$使得$f(w^{(k)+\lambda_{k}p_{k}})=\min_{\lambda \ge 0}f\left(w^{(k)}+\lambda p_{k}\right)$
+	    	\item 置$ w^{(k+1)} = w^{(k)}+\lambda_{k}p_{k}$
+	    	\item 计算$ g_{k+1}=g(w^{(k+1)}) $,若$ g_{k}=0 $，则停止计算；否则，按下式求出$ B_{k+1} $：\[B_{k+1}=B_{k}+\frac{y_{k}y_{k}^{\top}}{y_{k}^{\top}\delta_{k}}-\frac{B_{k}\delta_{k}\delta_{k}^{\top}B_{k}}{\delta_{k}^{\top}B_{k}\delta_{k}},\qquad y_{k}=g_{k+1}-g_{k};\delta_{k}=w^{(k+1)}-w^{(k)}\]
+	    	\item 置$ k=k+1 $，转3
+	    \end{enumerate}
+	    
+	    \begin{algorithm}[htb]
+	    	\caption{BFGS算法}
+	    	\label{alg:viterbi}
+	    	{\bf 输入：}特征函数$ f_{1},f_{2},\cdots,f_{n} $；经验分布$ \tilde{P}(X,Y) $；
+	    	
+	    	
+	    	{\bf 输出：}最优参数值$ \hat{w} $；最优模型$ P_{\hat{w}}(y|x) $
+	    	
+	    	\begin{algorithmic}[1] 
+	    		\STATE {选定初始点$ w_{(0)} $，取$ \mathbf{B}_{0} $为正定对称矩阵，置$ k=0 $}
+	    		\STATE {计算$ g_{k}=g(w^{(k)}) $，若$ g_{k}=0 $，则停止计算；否则转3}
+	    		\STATE {由$ B_{k}p_{k}=-g_{k} $求出$ p_{k} $}
+	    		\STATE {一维搜索：求$\lambda_{k}$使得$f(w^{(k)+\lambda_{k}p_{k}})=\min_{\lambda \ge 0}f\left(w^{(k)}+\lambda p_{k}\right)$}
+	    		\STATE {置$ w^{(k+1)} = w^{(k)}+\lambda_{k}p_{k}$}
+	    		\STATE {计算$ g_{k+1}=g(w^{(k+1)}) $,若$ g_{k}=0 $，则停止计算；否则，按下式求出$ B_{k+1} $：\[B_{k+1}=B_{k}+\frac{y_{k}y_{k}^{\top}}{y_{k}^{\top}\delta_{k}}-\frac{B_{k}\delta_{k}\delta_{k}^{\top}B_{k}}{\delta_{k}^{\top}B_{k}\delta_{k}},\qquad y_{k}=g_{k+1}-g_{k};\delta_{k}=w^{(k+1)}-w^{(k)}\] }
+	    		\STATE {置$ k=k+1 $，转3}
+	    	\end{algorithmic} 
+	    	
+	    \end{algorithm}
+
+\end{document}
