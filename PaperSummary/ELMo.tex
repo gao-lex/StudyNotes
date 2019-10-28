@@ -1,0 +1,218 @@
+\documentclass[a4paper,UTF8,no-math]{ctexart}
+
+%\documentclass[a4paper,UTF8,no-math,zihao=-4]{ctexart}
+
+%\usepackage[backref]{hyperref} 
+
+\usepackage{listings}
+\usepackage{wrapfig}
+\usepackage{booktabs}
+\usepackage{xcolor}
+
+\usepackage{geometry}
+
+\usepackage{zhnumber}
+
+\usepackage{amsmath}% eqref 
+
+\usepackage{amssymb}% mathbb数学符号
+
+\usepackage{algorithm}
+
+\usepackage{algorithmic}
+
+\usepackage{natbib}
+
+\usepackage{multirow}
+\usepackage{graphicx}
+\usepackage{makecell}
+
+%\usepackage[linkcolor=black,citecolor=blue,anchorcolor=red]{hyperref}
+
+\usepackage{hyperref}
+
+% \usepackage{}
+
+\bibliographystyle{plainnat}
+
+
+
+\setmainfont{Times New Roman}
+
+\hypersetup{colorlinks=true}
+
+
+
+%\hypersetup{hidelinks,bookmarks=true,bookmarksopen=true}
+
+
+
+\geometry{a4paper,left=1.27cm,right=1.27cm,top=1.27cm,bottom=1.2cm}
+
+\lstset{ % General setup for the package
+	language=Python,
+	numbers=left,
+	frame=shadowbox,
+	tabsize=4,
+	breaklines=true, 
+}
+
+
+\newcommand\todo[1]{\textcolor{red}{[[#1]]}}
+\newcommand\mc[1]{\mathcal{#1}}
+\newcommand*\samethanks[1][\value{footnote}]{\footnotemark[#1]}
+%keys for memory and values. Can be changed if needed
+\newcommand{\kq}{q}
+\newcommand{\km}{k}
+\newcommand{\vq}{o}
+\newcommand{\vm}{m}
+\newcommand{\Wkq}{W_q}
+\newcommand{\Wkm}{W_k}
+\newcommand{\Wvq}{W_o}
+\newcommand{\Wvm}{W_m}
+\newcommand{\dmodel}{d_{\text{model}}}
+\newcommand{\dffn}{d_{\text{ffn}}}
+\newcommand{\dff}{d_{\text{ff}}}
+\newcommand{\mbf}[1]{\mathbf{#1}}
+%\newcommand{\kq}{{q}_k}
+%\newcommand{\km}{{m}_k}
+%\newcommand{\vq}{{q}_v}
+%\newcommand{\vm}{{m}_v}
+%\newcommand{\Wkq}{{W_q}_k}
+%\newcommand{\Wkm}{{W_m}_k}
+%\newcommand{\Wvq}{{W_q}_v}
+%\newcommand{\Wvm}{{W_m}_v}
+\newcommand\concat[3]{\left[#1 \parallel_#3 #2\right]}
+
+\title{1. Deep contextualized word representations\\2. Character-Aware Neural Language Models\footnote{https://blog.csdn.net/LAW_130625/article/details/78324950;https://zhuanlan.zhihu.com/p/21242454;http://www.hankcs.com/nlp/cs224n-character-aware-neural-language-models.html}}
+
+\author{分享人：高磊}
+
+\date{ \zhtoday}
+
+
+
+
+
+\begin{document}
+	
+	%	\tableofcontents
+	%	\newpage
+	
+	\maketitle
+	
+	\section{提出问题}
+	
+	大多数的神经序列转换模型都是Encoder-decoder架构，Encoder把符号表征系列 $(x_1, ..., x_n)$ 映射到一个连续表征序列$\mathbf{z} = (z_1, ..., z_n)$；给定$\mathbf{z}$，decoder再依次生成输出系列$(y_1,...,y_m)$。这种模型是自回归的，在生成下一个符号的时候，使用之前的生成符号作为额外输入。
+	
+	这种固有的顺序性妨碍了训练的并行性并且对内存有着很高的需求，这在长序列时是致命的。
+	
+	\section{解决办法}
+	
+	注意力机制可以不考虑输入、输出序列的距离来对彼此建模。为此我们提出了基于纯attention（没有用卷积和循环神经网络）的Tramsformer。Tramsformer遵循这个整体架构，使用堆叠的self-attention和point-wise、完全连接的层，用于编码器和解码器，如图~\ref{fig:model-arch}的左半部分和右半部分所示。
+	\begin{wrapfigure}{R}{0.51\textwidth}
+		\centering
+		\includegraphics[scale=0.5]{images/AttentionIsAllYouNeed/ModalNet-21.png}
+		\caption{The Transformer - model architecture.}
+		\label{fig:model-arch}
+	\end{wrapfigure}
+%	\begin{figure}
+%		\centering
+%		\includegraphics[scale=0.6]{images/AttentionIsAllYouNeed}
+%		\caption{The Transformer - model architecture.}
+%		\label{fig:model-arch}
+%	\end{figure}
+	
+	
+	\subsection{Encoder和Decoder stacks}
+	
+	\paragraph{Encoder:}Encoder由6个完全相同的层堆叠而成。每层有两个子层（multi-head self-attention 机制和一个简单的position-wise 的全连接前馈网络）。每个子层都有一个residual connection，所以每个子层的输出为$\mathrm{LayerNorm}(x + \mathrm{Sublayer}(x))$，其中$\mathrm{Sublayer}(x)$是子层自己实现的一个函数。为了方便residual connections，模型的所有子层和embedding层的输出维度$\dmodel=512$。
+	
+	\paragraph{Decoder:}Dncoder由6个完全相同的层堆叠而成。除了每个encoder层中的两个子层之外，decoder还插入第三个子层，该子层对encoder的输出执行multi-head attention。与encoder类似，我们在每个子层周围使用residual connections，然后进行layer normalization。我们还修改decoder中的自关注子层，以防止关注到到后续位置。这种Masking确保位置$i$的预测只能依赖于位置小于$i$的已知输出。
+	
+	\subsection{Attention}
+	
+	这部分主要讲Scaled Dot-Product Attention和Multi-Head Attention。其中 query、keys、values指什么？怎么算出output的？Multi-Head Attention是什么？可参考\footnote{http://jalammar.github.io/illustrated-transformer/}
+	
+	Transformer使用三种不同的方法来使用multi-Head attention：
+	\begin{enumerate}
+		\item In "encoder-decoder attention" layers
+		\item The encoder contains self-attention layers
+		\item  self-attention layers in the decoder
+	\end{enumerate}
+
+	\subsection{Position-wise 前馈神经网络}
+	
+	Encoder和Decoder的子层中都有一个全连接的前馈神经网络，是相同且独立地用在每个位置上的。这包含了两次线性变换，这两次线性变换间有一个ReLU激活：
+	\begin{equation}
+	\mathrm{FFN}(x)=\max(0, xW_1 + b_1) W_2 + b_2
+	\end{equation}
+	
+	\subsection{Embedding 和 Softmax}
+	
+	因为这个模型没有卷积和循环神经网络，为了使模型能够使用序列的顺序信息，必须在序列中天机一些相对或者绝对的位置信息。我们在Encoder和Decoder的底层输入的embedding中添加"positional encodings"。这种位置编码有很多选择：固定的和可学习的\footnote{《Convolutional sequence to sequence learning》——Jonas Gehring}
+	
+	这篇文章，我们使用
+	\begin{align*}
+	PE_{(pos,2i)} = sin(pos / 10000^{2i/\dmodel}) \\
+	PE_{(pos,2i+1)} = cos(pos / 10000^{2i/\dmodel})
+	\end{align*}其中，$pos$ 是位置并且 $i$ 是维度。除此之外，我们还尝试了可学习的位置编码，得到了相同的结果。
+	
+	\section{为什么要用Self-Attention}
+	
+	\begin{enumerate}
+		\item 每层的总计算复杂度
+		\item 可并行计算的计算量
+		\item 网络中长距离依赖关系之间的路径长度。在许多序列转换任务中，学习长依赖是一个主要的的挑战。影响学习这种依赖关系的能力的一个关键因素是网络中向前和向后信号必须经过的路径的长度。输入和输出序列中任何位置组合之间的这些路径越短，就越容易学习长期依赖关系。因此，我们还比较了在由不同层类型组成的网络中的任意两个输入和输出位置之间的最大路径长度。
+	\end{enumerate}
+	
+	除此之外，Self-Attention可以产生更多可解释的模型\footnote{注意力的分布可以可视化出来，能让人们看到具体学到了什么。实验证明，不同头的注意力学到了不同和句子的语法和语义结构有关的不同的东西。}。
+	
+\begin{table}[b]
+	
+	%Attention models are quite efficient for cross-positional communications when sequence length is smaller than channel depth.
+	\label{tab:op_complexities}
+	\begin{center}
+		\vspace{-1mm}
+		%\scalebox{0.75}{
+		
+		\begin{tabular}{lccc}
+			\toprule
+			Layer Type & Complexity per Layer & Sequential & Maximum Path Length  \\
+			&             & Operations &   \\
+			\hline
+			\rule{0pt}{2.0ex}Self-Attention & $O(n^2 \cdot d)$ & $O(1)$ & $O(1)$ \\
+			Recurrent & $O(n \cdot d^2)$ & $O(n)$ & $O(n)$ \\
+			
+			Convolutional & $O(k \cdot n \cdot d^2)$ & $O(1)$ & $O(log_k(n))$ \\
+			%\cmidrule
+			Self-Attention (restricted)& $O(r \cdot n \cdot d)$ & $O(1)$ & $O(n/r)$ \\
+			
+			%Convolutional (separable) & $O(k \cdot n \cdot d + n \cdot d^2)$ & $O(1)$ & $O(log_k(n))$ \\
+			
+			%Position-wise Feed-Forward & $O(n \cdot d^2)$ & $O(1)$ & $\infty$ \\
+			
+			%Fully Connected & $O(n^2 \cdot d^2)$ & $O(1)$ & $O(1)$ \\
+			%Convolutional (separable) & $O(k \cdot n \cdot d + n \cdot d^2)$ & $O(1)$ & $O(log_k(n))$ \\
+			
+			%Position-wise Feed-Forward & $O(n \cdot d^2)$ & $O(1)$ & $\infty$ \\
+			
+			%Fully Connected & $O(n^2 \cdot d^2)$ & $O(1)$ & $O(1)$ \\
+			\bottomrule
+		\end{tabular}
+		%}
+	\end{center}
+\caption{
+	最大路径长度，每层的复杂度和不同层间最小序列操作。 $n$ 代表序列长度，$d$ 代表维度，$k$ 代表卷积的kernel size，$r$ 代表在restricted self-attention中的邻域大小。}
+\end{table}
+
+
+	
+	
+	
+%	\section{外部参考}
+%		\begin{enumerate}
+%			\item http://jalammar.github.io/illustrated-transformer/
+%		\end{enumerate}
+		
+\end{document}

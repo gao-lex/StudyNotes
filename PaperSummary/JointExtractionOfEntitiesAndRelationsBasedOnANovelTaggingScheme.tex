@@ -1,0 +1,243 @@
+\documentclass[a4paper,UTF8,no-math]{ctexart}
+
+%\documentclass[a4paper,UTF8,no-math,zihao=-4]{ctexart}
+
+%\usepackage[backref]{hyperref} 
+
+\usepackage{times}
+\usepackage{latexsym}
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage{amsfonts,amssymb}
+\usepackage{amsmath}
+\usepackage{colortbl}
+\usepackage{color}
+\definecolor{green}{rgb}{.2,.8,.1}
+\definecolor{red}{rgb}{.9,.1,.1}
+\definecolor{blue}{rgb}{.1,.1,.9}
+\newcommand{\tabincell}[2]{\begin{tabular}{@{}#1@{}}#2\end{tabular}}
+\makeatletter
+\def\hlinewd#1{%
+	\noalign{\ifnum0=`}\fi\hrule \@height #1 \futurelet
+	\reserved@a\@xhline}
+\makeatother
+%\aclfinalcopy % Uncomment this line for the final submission
+%\def\aclpaperid{222} %  Enter the acl Paper ID here
+
+
+\usepackage{listings}
+
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{geometry}
+
+\usepackage{zhnumber}
+
+\usepackage{amsmath}% eqref 
+
+\usepackage{amssymb}% mathbb数学符号
+
+\usepackage{algorithm}
+
+\usepackage{algorithmic}
+
+\usepackage{natbib}
+
+\usepackage{multirow}
+
+\usepackage{makecell}
+
+%\usepackage[linkcolor=black,citecolor=blue,anchorcolor=red]{hyperref}
+
+\usepackage{hyperref}
+
+% \usepackage{}
+
+\bibliographystyle{plainnat}
+
+
+
+\setmainfont{Times New Roman}
+
+\hypersetup{colorlinks=true}
+
+
+
+%\hypersetup{hidelinks,bookmarks=true,bookmarksopen=true}
+
+
+
+\geometry{a4paper,left=1.27cm,right=1.27cm,top=1.27cm,bottom=1.27cm}
+
+\lstset{ % General setup for the package
+	language=Python,
+	numbers=left,
+	frame=shadowbox,
+	tabsize=4,
+	breaklines=true, 
+}
+
+
+
+\title{ Joint Extraction of Entities and Relations \\ Based on a Novel Tagging Scheme }
+
+\author{ 分享人：高磊 }
+
+\date{\zhtoday}
+
+
+
+
+
+\begin{document}
+
+	\maketitle
+
+%	\tableofcontents
+
+%	\newpage
+
+	%\part
+	
+	\begin{abstract}
+		实体和关系的联合抽取是信息抽取中的一项重要任务。为了解决这个问题，我们提出一种新的标记方案，将联合抽取任务转换为标记问题。在这个方案上，我们研究了直接抽取实体及其关系的端到端（不需要分开识别）的方法。我们在通过远程监督（distant supervision）\footnote{定义：只要包含两个Entity的句子，都在描述同一种关系。用途：主要用来为关系分类任务扩充数据集。优点：能够很快速地为数据集打上标签。缺点：它假设只要包含两个Entity的句子，都在描述同一种关系，这个假设会产生很多地错误标签。可能这两个Entity这是与某个主题有关。 因此往往还需要用一些过滤的方法去筛选出对关系分类有用的句子，比如sentence-level Attention。}的数据集上进行了实验，结果表明比大多数的pipeline方法和联合学习方法都好。更重要的是这个end-to-end的方法取得了在公共数据集中的最好的效果。
+	\end{abstract}
+	\section{Introduction}
+	
+	实体和关系的联合抽取是从非结构化文本中同时检测实体并识别它们的语义关系，如 \autoref{fig:exp}所示。和Open IE\footnote{《Open information extraction from the web》——Banko}（其关系词出现在了句子中）不同的是，这项工作的关系词（或许没有出现在给定句子中）来自预定义的关系集。这是知识抽取和知识库自动构建中的一个重要问题。
+	
+	\begin{figure}[h]
+		\begin{center}
+			\includegraphics[width=\linewidth]{./images/JointExtractionofEntitiesandRelationsBasedonaNovelTaggingSchem/figure-1.pdf}
+			\caption{\label{fig:exp}A standard example sentence for the task. ``Country-President'' is a relation in the predefined relation set.}
+		\end{center}
+	\end{figure}
+	
+	传统方法使用pipeline的方式来解决这个任务，例如，首先提取实体\footnote{《A survey of named entity recognition and classification》——Nadeau and Sekine}，然后识别它们的关系\footnote{《Classifying semantic relations by combining lexical and semanic resources》——Rink}。这种分离的框架使得任务变得容易并且每个组件有很高的灵活度。但是这种方法忽略了两个子任务间的相关性。实体识别的结果会影响到关系分类的性能，还可能导致误差传播（erroneous delivery）。
+	
+	和pipeline的方法不同，联合学习框架使用单个模型将实体及其关系同时抽取出来。这样可以有效地集成实体和关系的信息，而且实践证明取得了更好的结果。然而，大多数现有的联合方法是基于特征的结构系统\footnote{《 Incremental joint extraction of entity mentions and relations》——Li and  Ji } \footnote{《Modeling joint entity and relation extraction with table representation.》—— Miwa and  Sasaki} \footnote{《 Cotype: Joint extraction of typed entities and relations with knowledge bases》——  Ren}。这些方法需要复杂的特征工程并且严重依赖其他的NLP工具，这样可能导致误差传播（error propagation）。为了减少手动特征抽取的工作，\footnote{《 End-to-end relation extraction using lstms on sequences and tree structures》——Miwa and Bansal}提出了一个基于神经网络的方法来进行end-to-end的实体和关系抽取。虽然这个联合模型可以在单个模型中用共享参数来同时表征实体和关系，但是它也是独立地抽取实体和关系并且产生了一些冗余的信息。例如，\autoref{fig:exp}中有三个实体:``United~States'', ``Trump'' 和 ``Apple~Inc''。但是只有``United~States"和``Trump''有关系``Country-President''。实体``Apple~Inc''与其他句中的实体没有明显的关系。因此这个句子的抽取结果是\{$\textbf{United~States}_{e1}$, $\textbf{Country-President}_{r}$, $\textbf{Trump}_{e2}$\}，称为三元组（triplet）。
+	
+	在这个论文中，我们关注于抽取两个实体及其关系的三元组。因此，我们可以直接对三元组建模，而不是分开抽取实体和关系。基于这个动机，我们提出了一个tagging scheme和一个end-to-end的模型来解决这个问题。我们设计了一种新的tag，这种标记方案包含了实体的信息和实体间关系。基于这种tagging scheme，实体和关系的联合抽取可以转换成标注问题（tagging problem）。通过这种方法，我们可以简单地使用神经网络来对这个任务建模而不需要复杂的特征工程。
+	
+	
+	近期，基于LSTM的end-to-end的模型已经被成功应用在很多任务中：命名实体识别\footnote{《Neural architectures for named entity recognition》——Lample}，CCG Supertagging\footnote{《 Supertagging with lstms》——Vaswani}，Chunking\footnote{《Neural models for sequence chunking》——Zhai}等等。所以我们也用基于LSTM的end-to-end的模型来联合抽取实体和关系。我们也修改了decoding方法通过加入一个偏移损失（biased loss）来使其更适合我们的特别的tag。
+	
+	这个方法是一个监督学习算法。然而，手工标记具有大量的实体和关系的训练集的过程代价太高且容易出错。
+	因此，我们在公共数据集\footnote{https://github.com/shanzhenren/cotype}上进行了实验。
+	这个数据集是由远程监控方法产生的，我们使用它来验证我们的方法。
+	实验结果表明，我们的标记方案（tagging scheme）是有效的。
+	此外，我们的end-to-end模型可以在公共数据集上获得最佳结果。
+	
+	这篇论文的主要贡献有：\begin{enumerate}
+		\item 提出了一个把联合抽取实体和关系的问题转换为标注任务（tagging task）的新的标注方案；
+		\item 在这个标注方案之上，我们研究了很多end-to-end的模型来解决这个问题。基于tagging的方法比大多数的现有的pipeline方法和联合学习方法效果都好；
+		\item 我们还开发了一个带有biased lossfunction的end-to-end的模型来适应这个新的标注。它加强了相关实体间的联系。
+	\end{enumerate}
+	
+	
+	\section{Related Works}
+	
+	\section{Method}
+	
+	我们提出了一个新的标记方案和一个有biased目标函数的end-to-end的模型。该模型联合抽取实体及其关系。在本届，我们首先介绍怎样把抽取问题转换为标记问题。然后我们详细讲一下我们所使用模型的细节。
+	
+	\subsection{The Tagging Scheme}
+	
+	\begin{figure*}
+		\begin{center}
+			\includegraphics[width=\linewidth]{./images/JointExtractionofEntitiesandRelationsBasedonaNovelTaggingSchem/figure-2.pdf}
+			\caption{\label{fig:exp2}Gold standard annotation for an example sentence based on our tagging scheme, where ``CP'' is short for ``Country-President'' and ``CF'' is short for ``Company-Founder''.}
+		\end{center}
+	\end{figure*}
+
+	\autoref{fig:exp2}是一个结果标记的例子。每个单词都指定（assigned）了一个有助于提取结果的标签。标记“O”表示“Other”标签，意思是对应的单词和提取结果无关。除了“O”之外的其他标签由三部分组成：单词在实体中的位置，关系类型，关系角色（relation role）。我们使用“BIES”表示单词在实体中的位置信息。关系类型信息是从预定义的集合中得到的。关系角色由数字“1”和“2”来表示。一个抽取结果可以表示为 $(Entity_1,RelationType,Entity_2)$。因此，标记的总数为$N_t = 2*4*|R|+1$，其中$|R|$是预定义的关系集的大小。
+	
+	
+	\autoref{fig:exp2}是我们标记方法的一个例子说明。输入句子包含两个三元组：\{\textbf{United~States, Country-President,  Trump}\} 和 \{\textbf{Apple Inc, Company-Founder, Steven Paul Jobs}\}，其中“Country-President” 和 “Company-Founder” 是预定义的关系类型。
+	
+	\subsection{From Tag Sequence To Extracted Results}
+	
+	通过\autoref{fig:exp2}的标记序列，我们把有相同关系类型的实体结合起来得到最终的结果。
+	
+	除此之外，如果一个句子包含大于等于两个的相同关系类型三元组，我们采用就近原则将相邻的两个实体结合起来。
+	
+	本文中，我们只考虑实体属于三元组的情况，我们将重叠关系的识别留给以后的工作。
+	
+	
+	\subsection{The End-to-end Model}
+	
+	\autoref{model}模型包含了Bi-LSTM层来encode输入句子和一个基于LSTM的有biased loss的decoding层。Biased loss可以加强实体标记的相关性。
+	
+	\begin{figure*}[ht]
+		\begin{center}
+			\includegraphics[width=\linewidth]{./images/JointExtractionofEntitiesandRelationsBasedonaNovelTaggingSchem/figure-3.pdf}
+			\caption{\label{model}
+				An illustration of our model. (a): The architecture of the end-to-end model,
+				(b): The LSTM memory block in Bi-LSTM encoding layer, (c): The LSTM memory block in LSTM$_d$ decoding layer.
+			}
+		\end{center}
+	\end{figure*}
+
+	\subsubsection{The Bias Objective Function}
+	
+	Objective function 为：
+	
+	\begin{align*}L =& max \sum\limits_{j=1}^{|\mathbb D|} \sum\limits_{t=1}^{L_j}{(log(p_t^{(j)} = y_t^{(j)}|x_j,\Theta )\cdot I(O)} \\&{+
+		\alpha\cdot log(p_t^{(j)} = y_t^{(j)}|x_j,\Theta )\cdot (1-I(O)))},\end{align*}其中$$ I(O)=\left\{
+	\begin{aligned}
+1, & ~~if ~~~tag~=~'O' \\
+0, & ~~if ~~~tag~\ne~'O'
+.\end{aligned}
+\right.
+$$\textcolor{red}{意思就是只关注那些实际标记不为“O”的损失部分？？？？}。
+
+\subsection{Experiments}
+
+\noindent\textbf{Dataset}我们使用公开数据集NYT\footnote{下载地址：https://github.com/shanzhenren/CoType。公开数据有三个数据集，我们只使用了NYT数据集。
+	数据集的细节可见 《Cotype: Joint extraction of typed entities and relations with knowledge bases》——  Ren .
+}，该数据集使用了远程监督方法。该数据集的测试集是手动标注的，以保证其质量。这个训练集一共包含$ 353k $个三元组，测试集包含$ 3880 $个三元组。除此之外，关系集的大小为$ 24 $。
+
+\noindent\textbf{Evaluation}我们使用标准Precision，Recall和F1值来评价结果。\textcolor{blue}{和传统方法不同的是，我们的方法可以在不知道实体类型的信息下抽取三元组。}Besides, the ground-truth relation mentions are given and ``None'' label is excluded as $ \{ren2016cotype,li2014,miwa2016end\} $ did.
+
+\noindent\textbf{Hyperparameters}
+Our model consists of a Bi-LSTM encoding layer and a LSTM decoding layer with bias objective function.
+The word embeddings used in the encoding part are initialed by running word2vec\footnote{https://code.google.com/archive/p/word2vec/} on NYT training corpus.
+The dimension of the word embeddings is $d=300$. We regularize our network using
+dropout on embedding layer and the dropout ratio is $0.5$.
+The number of lstm units in encoding layer is $300$ and the number in decoding layer is $600$.
+The bias parameter $\alpha$ corresponding to the results in  \autoref{result} is $10$.
+
+\begin{table*}[ht]
+	\centering
+	\begin{tabular}{cccc}\hlinewd{1.2pt}
+		Methods	& ~~\emph{Prec.}~~&~~\emph{Rec.}~~ &~~\emph{F1}~~	\\\hlinewd{1.2pt}
+		FCM	&0.553	&0.154	&0.240\\
+		DS+logistic&	0.258	&0.393	&0.311\\
+		%DeepWalk	&0.176	&0.224	&0.197\\
+		LINE	&0.335	&0.329	&0.332\\\hline
+		MultiR	&0.338	&0.327	&0.333\\
+		DS-Joint	&0.574	&0.256	&0.354\\
+		%CoType-RM	&0.467	&0.380	&0.419\\
+		%CoType-TwoStep	&0.368	&0.446	&0.404\\
+		CoType	&0.423	&\textbf{0.511	}&0.463\\\hline
+		LSTM-CRF	&$\textbf{0.693} \pm \textbf{0.008}	$&$0.310 \pm 0.007	$&$0.428 \pm 0.008$\\
+		LSTM-LSTM	&$0.682 \pm 0.007	$&$0.320 \pm 0.006	$&$0.436 \pm 0.006$\\
+		%LSTM-LSTM-SAMPLE	&$0.686 \pm 0.01	$&$0.361 \pm 0.01	$&$0.473 \pm 0.001$\\
+		\textbf{LSTM-LSTM-Bias	}&$0.615 \pm 0.008	$&$0.414\pm 0.005	$&$\textbf{0.495} \pm \textbf{0.006}$\\\hlinewd{1.2pt}
+	\end{tabular}
+	\caption{\label{result}The predicted results of different methods on extracting both entities and their relations.
+		The first part (from row $1$ to row $3$) is the pipelined methods and the second part (row $4$ to $6$) is the jointly extracting methods.
+		Our tagging methods are shown in part three (row $7$ to $9$). In this part, we not only report the results of precision, recall and F1, we also
+		compute their standard deviation.
+	}
+\end{table*}
+
+	\subsubsection{Experimental Results}
+	
+	在基于我们的标记方案中LSTM-LSTM比LSTM-CRF的效果好。因为LSTM可以捕获长期依赖而CRF擅长于捕获整个标签序列的联合概率。相关标记彼此间可能有着较长的距离。因此，LSTM解码比CRF表现得好。LSTM-LSTM-Bias添加了一个权重以加强实体标签的影响，弱化无效标签的影响。因此，在这个标记方案中，我们的方法比普通的LSTM-decoding表现得更好。
+	
+	\section{Conclusion}
+	
+	本文提出了一个新的标记方案并且研究了end-to-end的模型来联合抽取实体和关系。实验结果表明我们的方法是有效的。但是它在识别重叠关系（overlapping relations）上还有不足。在之后的研究者，我们将输出层的softmax函数替换为多分类器，这样的话每个单词就可以有多个标签。通过这种方法，一个单词可以出现在多个三元组的结果中，这样就可以解决重叠关系的问题了。尽管我们的模型可以增强实体标签的影响，在接下来的任务中，对应实体的联系还需改进。
+	
+\end{document}
